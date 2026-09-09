@@ -8,12 +8,14 @@ from telegram.constants import ParseMode
 import uuid
 import random
 from database import Database
-from config import ADMIN_ID, TASK_REWARD, MIN_WITHDRAWAL, STARS_RATE, REFERRAL_REWARDS, MIN_REFERRALS_FOR_REWARD
+from config import ADMIN_ID, TASK_REWARD, MIN_WITHDRAWAL, REFERRAL_REWARDS, MIN_REFERRALS_FOR_REWARD, GRAM_USD_RATE, SEND_USD_RATE, XROCKET_USD_RATE
 
 db = Database()
 
 # Store active tasks
 active_tasks = {}
+# Store withdrawal info
+withdrawal_info = {}
 
 async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Start command - register user"""
@@ -54,7 +56,7 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"🌟 <b>Добро пожаловать в Stars Bot!</b>\n\n"
         f"Здесь ты можешь:\n"
         f"⭐ Зарабатывать звёзды\n"
-        f"🎯 Выполнять задания\n"
+        f"🏆 Выполнять задания\n"
         f"👥 Приглашать друзей\n"
         f"💸 Выводить свои звёзды\n\n"
         f"<i>Выбери раздел ниже 👇</i>",
@@ -129,9 +131,9 @@ async def cmd_bonus(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Bonus section"""
     message = (
         f"🎁 <b>Бонусы</b>\n\n"
-        f"✅ Ежедневный бонус - 5 ⭐\n"
-        f"🌟 За подписку на канал - 10 ⭐\n"
-        f"👑 Telegram Premium - +9 ⭐\n\n"
+        f"✅ Ежедневный бонус - 0.5 ⭐\n"
+        f"🌟 За подписку на канал - 1 ⭐\n"
+        f"👑 Telegram Premium - +0.5 ⭐\n\n"
         f"Приходи завтра за новыми бонусами!"
     )
     
@@ -204,30 +206,25 @@ async def cmd_tasks(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
 async def cmd_withdraw(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Withdraw stars section"""
+    """Withdraw stars section - choose method"""
     user_id = update.effective_user.id
     stars = db.get_stars(user_id)
     
     message = (
-        f"⭐ <b>Вывести звёзды</b>\n\n"
-        f"Ваш баланс: <b>{stars:.2f} ⭐</b>\n"
-        f"Курс: 3 ⭐ = 1 Telegram Star\n\n"
-        f"Минимум для вывода: <b>{MIN_WITHDRAWAL} ⭐</b>"
+        f"⭐ <b>Выбери способ вывода</b>\n\n"
+        f"Ваш баланс: <b>{stars:.2f} ⭐</b>\n\n"
+        f"Курсы обмена:\n"
+        f"💫 GRAM: 1 ⭐ = 0.14 GRAM\n"
+        f"📱 Send (@send): 1 ⭐ = 0.14 TON\n"
+        f"🚀 xRocket (@xrocket): 1 ⭐ = 0.14 USDT"
     )
     
-    keyboard = []
-    
-    if stars >= MIN_WITHDRAWAL:
-        withdraw_options = [15, 25, 50, 100]
-        for amount in withdraw_options:
-            if stars >= amount:
-                stars_count = int(amount / STARS_RATE)
-                keyboard.append([InlineKeyboardButton(
-                    f"💰 {amount} ⭐ → {stars_count} Star",
-                    callback_data=f"withdraw_{amount}"
-                )])
-    
-    keyboard.append([InlineKeyboardButton("← Назад в меню", callback_data="menu")])
+    keyboard = [
+        [InlineKeyboardButton("💫 GRAM", callback_data="withdraw_method_gram")],
+        [InlineKeyboardButton("📱 Send (@send)", callback_data="withdraw_method_send")],
+        [InlineKeyboardButton("🚀 xRocket (@xrocket)", callback_data="withdraw_method_xrocket")],
+        [InlineKeyboardButton("← Назад в меню", callback_data="menu")]
+    ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     
     if update.callback_query:
@@ -242,6 +239,54 @@ async def cmd_withdraw(update: Update, context: ContextTypes.DEFAULT_TYPE):
             parse_mode=ParseMode.HTML,
             reply_markup=reply_markup
         )
+
+async def cmd_withdraw_amounts(update: Update, context: ContextTypes.DEFAULT_TYPE, method: str):
+    """Show withdrawal amounts for selected method"""
+    user_id = update.effective_user.id
+    stars = db.get_stars(user_id)
+    
+    method_names = {
+        'gram': ('GRAM', 0.14, '💫'),
+        'send': ('Send', 0.14, '📱'),
+        'xrocket': ('xRocket', 0.14, '🚀')
+    }
+    
+    method_name, rate, emoji = method_names.get(method, ('Unknown', 1, '❓'))
+    
+    message = (
+        f"{emoji} <b>Вывод {method_name}</b>\n\n"
+        f"Ваш баланс: <b>{stars:.2f} ⭐</b>\n"
+        f"Курс: 1 ⭐ = {rate} {method_name}\n"
+        f"Минимум: {MIN_WITHDRAWAL} ⭐\n\n"
+        f"Выберите сумму:"
+    )
+    
+    keyboard = []
+    
+    if stars >= MIN_WITHDRAWAL:
+        withdraw_options = [15, 30, 50, 100]
+        for amount in withdraw_options:
+            if stars >= amount:
+                converted = round(amount * rate, 4)
+                keyboard.append([InlineKeyboardButton(
+                    f"💸 {amount} ⭐ → {converted} {method_name}",
+                    callback_data=f"withdraw_amount_{method}_{amount}"
+                )])
+    else:
+        keyboard.append([InlineKeyboardButton(
+            f"❌ Недостаточно звёзд (нужно {MIN_WITHDRAWAL})",
+            callback_data="none"
+        )])
+    
+    keyboard.append([InlineKeyboardButton("← Вернуться к выбору способа", callback_data="withdraw")])
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    query = update.callback_query
+    await query.edit_message_text(
+        message,
+        parse_mode=ParseMode.HTML,
+        reply_markup=reply_markup
+    )
 
 async def cmd_top(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Top users leaderboard"""
@@ -302,7 +347,7 @@ async def cmd_games(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def cmd_random(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Random rewards"""
     user_id = update.effective_user.id
-    reward = random.randint(1, 10)
+    reward = round(random.uniform(0.1, 1.0), 1)
     db.add_stars(user_id, reward)
     
     message = (
@@ -398,20 +443,47 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await cmd_random(update, context)
     elif data == "donate":
         await cmd_donate(update, context)
-    elif data.startswith("withdraw_"):
-        amount = int(data.split("_")[1])
+    elif data.startswith("withdraw_method_"):
+        method = data.replace("withdraw_method_", "")
+        await cmd_withdraw_amounts(update, context, method)
+    elif data.startswith("withdraw_amount_"):
+        parts = data.replace("withdraw_amount_", "").split("_")
+        method = parts[0]
+        amount = int(parts[1])
         user_id = update.effective_user.id
         stars = db.get_stars(user_id)
         
         if stars >= amount:
             db.remove_stars(user_id, amount)
-            telegram_stars = int(amount / STARS_RATE)
-            withdrawal_id = db.create_withdrawal(user_id, amount, telegram_stars)
+            withdrawal_id = db.create_withdrawal(user_id, amount, method)
+            
+            method_names = {
+                'gram': 'GRAM',
+                'send': 'Send',
+                'xrocket': 'xRocket'
+            }
+            
+            method_rates = {
+                'gram': 0.14,
+                'send': 0.14,
+                'xrocket': 0.14
+            }
+            
+            method_emojis = {
+                'gram': '💫',
+                'send': '📱',
+                'xrocket': '🚀'
+            }
+            
+            rate = method_rates.get(method, 1)
+            converted = round(amount * rate, 4)
+            method_name = method_names.get(method, 'Unknown')
+            emoji = method_emojis.get(method, '❓')
             
             message = (
                 f"✅ <b>Заявка на вывод создана!</b>\n\n"
                 f"ID: #{withdrawal_id}\n"
-                f"Сумма: {amount} ⭐ → {telegram_stars} Telegram Stars\n\n"
+                f"Сумма: {amount} ⭐ → {converted} {method_name}\n\n"
                 f"Ожидайте рассмотрения администратором.\n"
                 f"Обычно это занимает 5-30 минут."
             )
