@@ -43,7 +43,7 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
         [InlineKeyboardButton("💰 Заработать", callback_data="earn")],
         [InlineKeyboardButton("🎁 Бонус", callback_data="bonus"), InlineKeyboardButton("🔥 Задания", callback_data="tasks")],
-        [InlineKeyboardButton("⭐ Выести", callback_data="withdraw"), InlineKeyboardButton("👤 Профиль", callback_data="profile")],
+        [InlineKeyboardButton("⭐ Вывести", callback_data="withdraw"), InlineKeyboardButton("👤 Профиль", callback_data="profile")],
         [InlineKeyboardButton("🎮 Игры", callback_data="games"), InlineKeyboardButton("👑 Топ", callback_data="top")],
         [InlineKeyboardButton("🎲 Рандом", callback_data="random")],
         [InlineKeyboardButton("❤️ Донат", callback_data="donate")]
@@ -69,7 +69,7 @@ async def cmd_profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     message = (
         f"👤 <b>Ваш профиль</b>\n\n"
-        f"⭐ Баланс: <b>{stats['stars']:.2f}</b> RP★\n"
+        f"⭐ Баланс: <b>{stats['stars']:.2f}</b>\n"
         f"👥 Рефералов: <b>{stats['referrals']}</b>\n"
         f"✅ Выполнено заданий: <b>{stats['completed_tasks']}</b>\n\n"
         f"🔗 Ваша реферальная ссылка:\n"
@@ -129,9 +129,9 @@ async def cmd_bonus(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Bonus section"""
     message = (
         f"🎁 <b>Бонусы</b>\n\n"
-        f"✅ Ежедневный бонус - 5 RP★\n"
-        f"🌟 За подписку на канал - 10 RP★\n"
-        f"👑 Telegram Premium - +9 RP★\n\n"
+        f"✅ Ежедневный бонус - 5 ⭐\n"
+        f"🌟 За подписку на канал - 10 ⭐\n"
+        f"👑 Telegram Premium - +9 ⭐\n\n"
         f"Приходи завтра за новыми бонусами!"
     )
     
@@ -181,7 +181,7 @@ async def cmd_tasks(update: Update, context: ContextTypes.DEFAULT_TYPE):
     message = (
         f"🔥 <b>Решите пример для подтверждения:</b>\n\n"
         f"<code>{num1} {operation} {num2} = ?</code>\n\n"
-        f"Ответ: <b>{TASK_REWARD} RP★</b>\n\n"
+        f"Ответ: <b>{TASK_REWARD} ⭐</b>\n\n"
         f"Напишите ответ в чат:"
     )
     
@@ -210,9 +210,9 @@ async def cmd_withdraw(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     message = (
         f"⭐ <b>Вывести звёзды</b>\n\n"
-        f"Ваш баланс: <b>{stars:.2f} RP★</b>\n"
-        f"Курс: 3 RP★ = 1 Telegram Star\n\n"
-        f"Минимум для вывода: <b>{MIN_WITHDRAWAL} RP★</b>"
+        f"Ваш баланс: <b>{stars:.2f} ⭐</b>\n"
+        f"Курс: 3 ⭐ = 1 Telegram Star\n\n"
+        f"Минимум для вывода: <b>{MIN_WITHDRAWAL} ⭐</b>"
     )
     
     keyboard = []
@@ -223,7 +223,7 @@ async def cmd_withdraw(update: Update, context: ContextTypes.DEFAULT_TYPE):
             if stars >= amount:
                 stars_count = int(amount / STARS_RATE)
                 keyboard.append([InlineKeyboardButton(
-                    f"💰 {amount} RP★ → {stars_count} Star",
+                    f"💰 {amount} ⭐ → {stars_count} Star",
                     callback_data=f"withdraw_{amount}"
                 )])
     
@@ -274,7 +274,7 @@ async def cmd_games(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Games section"""
     message = (
         f"🎮 <b>Игры</b>\n\n"
-        f"Скоро здесь появятся минигры для заработка!\n\n"
+        f"Скоро здесь появятся мини-игры для заработка!\n\n"
         f"🎲 Угадай число\n"
         f"🃏 Карточные игры\n"
         f"💣 Сапёр\n\n"
@@ -307,7 +307,7 @@ async def cmd_random(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     message = (
         f"🎲 <b>Ты выиграл!</b>\n\n"
-        f"+ {reward} RP★\n\n"
+        f"+ {reward} ⭐\n\n"
         f"Приходи завтра за новой попыткой!"
     )
     
@@ -369,7 +369,7 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         keyboard = [
             [InlineKeyboardButton("💰 Заработать", callback_data="earn")],
             [InlineKeyboardButton("🎁 Бонус", callback_data="bonus"), InlineKeyboardButton("🔥 Задания", callback_data="tasks")],
-            [InlineKeyboardButton("⭐ Выести", callback_data="withdraw"), InlineKeyboardButton("👤 Профиль", callback_data="profile")],
+            [InlineKeyboardButton("⭐ Вывести", callback_data="withdraw"), InlineKeyboardButton("👤 Профиль", callback_data="profile")],
             [InlineKeyboardButton("🎮 Игры", callback_data="games"), InlineKeyboardButton("👑 Топ", callback_data="top")],
             [InlineKeyboardButton("🎲 Рандом", callback_data="random")],
             [InlineKeyboardButton("❤️ Донат", callback_data="donate")]
@@ -411,7 +411,7 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             message = (
                 f"✅ <b>Заявка на вывод создана!</b>\n\n"
                 f"ID: #{withdrawal_id}\n"
-                f"Сумма: {amount} RP★ → {telegram_stars} Telegram Stars\n\n"
+                f"Сумма: {amount} ⭐ → {telegram_stars} Telegram Stars\n\n"
                 f"Ожидайте рассмотрения администратором.\n"
                 f"Обычно это занимает 5-30 минут."
             )
@@ -443,8 +443,8 @@ async def task_answer(update: Update, context: ContextTypes.DEFAULT_TYPE):
             db.add_stars(user_id, TASK_REWARD)
             await update.message.reply_text(
                 f"✅ <b>Правильно!</b>\n\n"
-                f"+ {TASK_REWARD} RP★\n\n"
-                f"Твой баланс: {db.get_stars(user_id):.2f} RP★",
+                f"+ {TASK_REWARD} ⭐\n\n"
+                f"Твой баланс: {db.get_stars(user_id):.2f} ⭐",
                 parse_mode=ParseMode.HTML
             )
         else:
