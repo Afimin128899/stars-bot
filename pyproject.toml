@@ -1,0 +1,14 @@
+[tool.poetry]
+name = "stars-bot"
+version = "1.0.0"
+description = "Telegram bot for earning stars"
+authors = ["Afimin128899"]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+python-telegram-bot = "^20.3"
+requests = "^2.31.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
