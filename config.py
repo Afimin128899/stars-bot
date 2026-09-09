@@ -8,16 +8,16 @@ BOT_TOKEN = "YOUR_BOT_TOKEN_HERE"
 # Admin ID (для проверки выводов)
 ADMIN_ID = 123456789
 
-# Курс обмена
-STARS_RATE = 1  # 1 звезда = 1 звезда (базовая)
-GRAM_RATE = 1  # 1 звезда = 0.14 GRAM (примерно)
-SEND_RATE = 1  # 1 звезда = 0.14 TON (Send)
-XROCKET_RATE = 1  # 1 звезда = 0.14 USDT (xRocket)
+# Курсы обмена в USD (средние рыночные курсы)
+GRAM_USD = 4.50  # 1 GRAM ≈ $4.50 USD
+TON_USD = 7.20   # 1 TON ≈ $7.20 USD
+USDT_USD = 1.00  # 1 USDT = $1.00 USD
 
-# Курсы в GRAM, Send, xRocket (в долларах за 1 звезду)
-GRAM_USD_RATE = 0.14  # 1 звезда = 0.14 GRAM
-SEND_USD_RATE = 0.14  # 1 звезда = 0.14 TON
-XROCKET_USD_RATE = 0.14  # 1 звезда = 0.14 USDT
+# Курс обмена звезды
+# 1 звезда = 0.01 GRAM
+STARS_TO_GRAM = 0.01  # в GRAM
+STARS_TO_TON = 0.01   # в TON (примерно)
+STARS_TO_USDT = 0.072 # в USDT (0.01 GRAM * $4.50 = $0.045, 0.01 TON * $7.20 = $0.072)
 
 # Награды за задания
 TASK_REWARD = 0.3  # звезды за решение примера
@@ -45,10 +45,9 @@ DB_NAME = "stars_bot.db"
 # Логирование
 DEBUG = True
 
-# Платёжные системы
+# Платежные системы
 WITHDRAW_METHODS = {
-    'telegram_stars': {'name': 'Telegram Stars', 'rate': STARS_RATE},
-    'gram': {'name': 'GRAM', 'rate': GRAM_USD_RATE},
-    'send': {'name': 'Send (@send)', 'rate': SEND_USD_RATE},
-    'xrocket': {'name': 'xRocket (@xrocket)', 'rate': XROCKET_USD_RATE},
+    'gram': {'name': 'GRAM', 'rate': STARS_TO_GRAM, 'usd_rate': GRAM_USD},
+    'send': {'name': 'Send (TON)', 'rate': STARS_TO_TON, 'usd_rate': TON_USD},
+    'xrocket': {'name': 'xRocket (USDT)', 'rate': STARS_TO_USDT, 'usd_rate': USDT_USD},
 }

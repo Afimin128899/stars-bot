@@ -8,7 +8,7 @@ from telegram.constants import ParseMode
 import uuid
 import random
 from database import Database
-from config import ADMIN_ID, TASK_REWARD, MIN_WITHDRAWAL, REFERRAL_REWARDS, MIN_REFERRALS_FOR_REWARD, GRAM_USD_RATE, SEND_USD_RATE, XROCKET_USD_RATE
+from config import ADMIN_ID, TASK_REWARD, MIN_WITHDRAWAL, REFERRAL_REWARDS, MIN_REFERRALS_FOR_REWARD, STARS_TO_GRAM, STARS_TO_TON, STARS_TO_USDT, GRAM_USD, TON_USD, USDT_USD
 
 db = Database()
 
@@ -102,7 +102,7 @@ async def cmd_earn(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"💰 <b>Способы заработка</b>\n\n"
         f"1️⃣ <b>Выполнение заданий</b> - Решай примеры, получай звёзды\n"
         f"2️⃣ <b>Реферальная программа</b> - Приглашай друзей за награды\n"
-        f"3️⃣ <b>Бонусы</b> - Получай бонусы за определённые действия\n\n"
+        f"3️⃣ <b>Бонус��</b> - Получай бонусы за определённые действия\n\n"
         f"Выбери способ:"
     )
     
@@ -214,15 +214,15 @@ async def cmd_withdraw(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"⭐ <b>Выбери способ вывода</b>\n\n"
         f"Ваш баланс: <b>{stars:.2f} ⭐</b>\n\n"
         f"Курсы обмена:\n"
-        f"💫 GRAM: 1 ⭐ = 0.14 GRAM\n"
-        f"📱 Send (@send): 1 ⭐ = 0.14 TON\n"
-        f"🚀 xRocket (@xrocket): 1 ⭐ = 0.14 USDT"
+        f"💰 GRAM: 1 ⭐ = 0.01 GRAM (~${GRAM_USD * 0.01:.4f})\n"
+        f"📱 Send (TON): 1 ⭐ = 0.01 TON (~${TON_USD * 0.01:.4f})\n"
+        f"🚀 xRocket (USDT): 1 ⭐ = 0.072 USDT (~${USDT_USD * 0.072:.4f})"
     )
     
     keyboard = [
-        [InlineKeyboardButton("💫 GRAM", callback_data="withdraw_method_gram")],
-        [InlineKeyboardButton("📱 Send (@send)", callback_data="withdraw_method_send")],
-        [InlineKeyboardButton("🚀 xRocket (@xrocket)", callback_data="withdraw_method_xrocket")],
+        [InlineKeyboardButton("💰 GRAM", callback_data="withdraw_method_gram")],
+        [InlineKeyboardButton("📱 Send (TON)", callback_data="withdraw_method_send")],
+        [InlineKeyboardButton("🚀 xRocket (USDT)", callback_data="withdraw_method_xrocket")],
         [InlineKeyboardButton("← Назад в меню", callback_data="menu")]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -245,18 +245,23 @@ async def cmd_withdraw_amounts(update: Update, context: ContextTypes.DEFAULT_TYP
     user_id = update.effective_user.id
     stars = db.get_stars(user_id)
     
-    method_names = {
-        'gram': ('GRAM', 0.14, '💫'),
-        'send': ('Send', 0.14, '📱'),
-        'xrocket': ('xRocket', 0.14, '🚀')
+    method_configs = {
+        'gram': {'name': 'GRAM', 'rate': STARS_TO_GRAM, 'usd_rate': GRAM_USD, 'emoji': '💰'},
+        'send': {'name': 'Send (TON)', 'rate': STARS_TO_TON, 'usd_rate': TON_USD, 'emoji': '📱'},
+        'xrocket': {'name': 'xRocket (USDT)', 'rate': STARS_TO_USDT, 'usd_rate': USDT_USD, 'emoji': '🚀'}
     }
     
-    method_name, rate, emoji = method_names.get(method, ('Unknown', 1, '❓'))
+    config = method_configs.get(method, {})
+    method_name = config.get('name', 'Unknown')
+    rate = config.get('rate', 1)
+    usd_rate = config.get('usd_rate', 0)
+    emoji = config.get('emoji', '❓')
     
     message = (
         f"{emoji} <b>Вывод {method_name}</b>\n\n"
         f"Ваш баланс: <b>{stars:.2f} ⭐</b>\n"
         f"Курс: 1 ⭐ = {rate} {method_name}\n"
+        f"в USD: ~${rate * usd_rate:.4f}\n"
         f"Минимум: {MIN_WITHDRAWAL} ⭐\n\n"
         f"Выберите сумму:"
     )
@@ -268,8 +273,9 @@ async def cmd_withdraw_amounts(update: Update, context: ContextTypes.DEFAULT_TYP
         for amount in withdraw_options:
             if stars >= amount:
                 converted = round(amount * rate, 4)
+                converted_usd = round(amount * rate * usd_rate, 2)
                 keyboard.append([InlineKeyboardButton(
-                    f"💸 {amount} ⭐ → {converted} {method_name}",
+                    f"💸 {amount} ⭐ → {converted} {method_name.split()[0]} (~${converted_usd})",
                     callback_data=f"withdraw_amount_{method}_{amount}"
                 )])
     else:
@@ -457,33 +463,26 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             db.remove_stars(user_id, amount)
             withdrawal_id = db.create_withdrawal(user_id, amount, method)
             
-            method_names = {
-                'gram': 'GRAM',
-                'send': 'Send',
-                'xrocket': 'xRocket'
+            method_configs = {
+                'gram': {'name': 'GRAM', 'rate': STARS_TO_GRAM, 'usd_rate': GRAM_USD, 'emoji': '💰'},
+                'send': {'name': 'Send (TON)', 'rate': STARS_TO_TON, 'usd_rate': TON_USD, 'emoji': '📱'},
+                'xrocket': {'name': 'xRocket (USDT)', 'rate': STARS_TO_USDT, 'usd_rate': USDT_USD, 'emoji': '🚀'}
             }
             
-            method_rates = {
-                'gram': 0.14,
-                'send': 0.14,
-                'xrocket': 0.14
-            }
+            config = method_configs.get(method, {})
+            rate = config.get('rate', 1)
+            usd_rate = config.get('usd_rate', 0)
+            method_name = config.get('name', 'Unknown')
+            emoji = config.get('emoji', '❓')
             
-            method_emojis = {
-                'gram': '💫',
-                'send': '📱',
-                'xrocket': '🚀'
-            }
-            
-            rate = method_rates.get(method, 1)
             converted = round(amount * rate, 4)
-            method_name = method_names.get(method, 'Unknown')
-            emoji = method_emojis.get(method, '❓')
+            converted_usd = round(amount * rate * usd_rate, 2)
             
             message = (
                 f"✅ <b>Заявка на вывод создана!</b>\n\n"
                 f"ID: #{withdrawal_id}\n"
-                f"Сумма: {amount} ⭐ → {converted} {method_name}\n\n"
+                f"Сумма: {amount} ⭐ → {converted} {method_name.split()[0]}\n"
+                f"В USD: ~${converted_usd}\n\n"
                 f"Ожидайте рассмотрения администратором.\n"
                 f"Обычно это занимает 5-30 минут."
             )
